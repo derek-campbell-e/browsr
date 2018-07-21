@@ -1,4 +1,4 @@
-module.exports = function Electron(){
+module.exports = function Electron(Browsr){
   
   const {app, BrowserWindow, session, ipcMain} = require('electron');
   const cheerio = require('cheerio');
@@ -58,7 +58,22 @@ module.exports = function Electron(){
     }
   });
 
-  app.loadPage = function(url, socket){
+  app.processEvent = function(event, uuid){
+    app.runJS(function(event, uuid){
+      console.log(arguments);
+      let triggeredEvent = new CustomEvent(event.type, event);
+      let element = document.querySelector(`[data-browsr-id='${uuid}']`);
+      if(!element){
+        return;
+      }
+      document.querySelector(`[data-browsr-id='${uuid}']`).dispatchEvent(triggeredEvent);
+    }, event, uuid).then(function(){
+      //socket.emit('update', new Date());
+    });
+  };
+
+  app.loadPage = function(url){
+    const socket = Browsr.server.socket.socket;
     ipcMain.on('dom-event', function(event, domchange){
       console.log(domchange);
     });

@@ -1,19 +1,16 @@
-module.exports = function SocketServer(Broswr){
+module.exports = function SocketServer(Browsr, Server){
   let ss = {};
-  const app = require('http').createServer(function(){});
-  const io = require('socket.io')(app);
 
-  app.listen(8006);
+  const io = require('socket.io')(Server);
+  ss.socket = null;
 
   io.on('connection', function (socket) {
-    console.log("WE GOT A SOCKET");
-    socket.io = io;
-    socket.emit('news', { hello: 'world' });
-    socket.on('my other event', function (data) {
-      console.log(data);
-    });
+    ss.socket = socket;
     socket.on('url', function(url){
-      Broswr.peripheral.browser.loadPage(url, socket);
+      Browsr.server.browser.loadPage(url);
+    });
+    socket.on('dom-event-client', function(){
+      Browsr.server.browser.processEvent.apply(null, arguments);
     });
   });
 

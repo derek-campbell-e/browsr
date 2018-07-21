@@ -6,7 +6,7 @@ module.exports = function Browsr(options){
       br.peripheral = require('./client')(br);
     break;
     case 'server':
-      br.peripheral = require('./server')(br);
+      br.server = require('./server')(br);
     break;
   }
   

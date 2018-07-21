@@ -1,6 +1,7 @@
-module.exports = function ServerPeripherial(Broswr){
+module.exports = function ServerPeripherial(Browsr){
   let sp = {};
-  sp.socket = require('./socket')(Broswr);
-  sp.browser = require('./browser')(Broswr);
+  sp.http = require('./http')(Browsr);
+  sp.socket = require('./socket')(Browsr, sp.http);
+  sp.browser = require('./browser')(Browsr);
   return sp;
 };
