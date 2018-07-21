@@ -1,11 +1,24 @@
 module.exports = function SocketServer(Browsr, Server){
-  let ss = {};
+  const EventEmitter = require('events').EventEmitter;
+  let ss = new EventEmitter();
 
   const io = require('socket.io')(Server);
-  ss.socket = null;
+
+  let sockets = {};
+
+  ss.broadcast = function(){
+    for(let socketID in sockets){
+      let socket = sockets[socketID];
+      socket.emit.apply(socket, arguments);
+    }
+  };
 
   io.on('connection', function (socket) {
-    ss.socket = socket;
+    sockets[socket.id] = socket;
+    socket.on('disconnect', function(){
+      sockets[socket.id] = null;
+      delete sockets[socket.id];
+    });
     socket.on('url', function(url){
       Browsr.server.browser.loadPage(url);
     });

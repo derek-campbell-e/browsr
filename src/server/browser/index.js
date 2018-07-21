@@ -61,22 +61,65 @@ module.exports = function Electron(Browsr){
   app.processEvent = function(event, uuid){
     app.runJS(function(event, uuid){
       console.log(arguments);
-      let triggeredEvent = new CustomEvent(event.type, event);
-      let element = document.querySelector(`[data-browsr-id='${uuid}']`);
-      if(!element){
+      let eventClass = null;
+      var doc;
+      let node = document.querySelector(`[data-browsr-id='${uuid}']`);
+      if(!node){
         return;
       }
-      document.querySelector(`[data-browsr-id='${uuid}']`).dispatchEvent(triggeredEvent);
+      if (node.ownerDocument) {
+          doc = node.ownerDocument;
+      } else if (node.nodeType == 9){
+          // the node may be the document itself, nodeType 9 = DOCUMENT_NODE
+          doc = node;
+      } else {
+          throw new Error("Invalid node passed to fireEvent: " + node.id);
+      }
+      switch (event.type) {
+        case "click": 
+        case 'mouseover':
+        case 'mouseout':
+        case 'mouseenter':
+        case 'mouseleave':
+        case "mousedown":
+        case "mouseup":
+          eventClass = "MouseEvents";
+          break;
+        case "focus":
+        case "blur":
+        case 'focusin':
+        case 'focusout':
+          eventClass = 'FocusEvent';
+        break;
+
+        case "change":
+        case "select":
+          eventClass = "HTMLEvents";
+          break;
+        default:
+          return;
+          break;
+      }
+
+      let triggeredEvent = doc.createEvent(eventClass);
+      triggeredEvent.initEvent(event.type, true, true);
+      triggeredEvent.synthetic = true;
+      node.dispatchEvent(triggeredEvent);
+     
     }, event, uuid).then(function(){
       //socket.emit('update', new Date());
     });
   };
 
   app.loadPage = function(url){
-    const socket = Browsr.server.socket.socket;
+    //const socket = Browsr.server.socket.socket;
+    const socketSever =  Browsr.server.socket;
     ipcMain.on('dom-event', function(event, domchange){
-      console.log(domchange);
+      //console.log(domchange);
+      socketSever.broadcast('dom-change', domchange);
     });
+
+    /*
     socket.on('click', function(uuid){
       app.runJS(function(uuid){
         document.querySelector(`[data-browsr-id='${uuid}']`).click();
@@ -84,16 +127,18 @@ module.exports = function Electron(Browsr){
         socket.emit('update', new Date());
       });
     });
+    */
 
     win.loadURL(url);
     win.webContents.on('dom-ready', function(){
       app.runJS(function(){
+        createUniqueIDS();
         createObserver();
       })
     });
     win.webContents.on('did-finish-load', function(){
       app.prePagePipe().then(function(html){
-        socket.broadcast.emit('page', html);
+        socketSever.broadcast('page', html);
       }).catch(console.log);
     });
   };
@@ -127,6 +172,7 @@ module.exports = function Electron(Browsr){
         });
       });
 
+      /*
       await app.runJS(function(){
         function uuidv4() {
           return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -134,10 +180,11 @@ module.exports = function Electron(Browsr){
             return v.toString(16);
           });
         }
-        document.querySelectorAll('body *').forEach(function(node) {
+        document.querySelectorAll('*').forEach(function(node) {
           node.setAttribute('data-browsr-id', uuidv4());
         });
       });
+      */
 
       let html = await app.runJS(function(){
         return document.documentElement.innerHTML;

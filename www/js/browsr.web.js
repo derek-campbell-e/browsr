@@ -10,6 +10,15 @@ module.exports = function BrowsrWeb(){
     $(document).find('body').html($html);
   };
 
+  bw.domChange = function(mutation){
+    let target = $(`[data-browsr-id='${mutation.target}']`);
+    switch(mutation.type){
+      case 'attributes':
+        target.attr(mutation.attributeName, mutation.currentValue);
+      break;
+    }
+  };
+
   let bind = function(){
     $(document).on(`blur focus focusin focusout load resize scroll unload click 
     dblclick mousedown mouseup mousemove mouseover mouseout mouseenter 
@@ -24,6 +33,7 @@ module.exports = function BrowsrWeb(){
       console.log('CONNECTED');
     });
     socket.on('page', bw.loadDom);
+    socket.on('dom-change', bw.domChange);
   };
 
   let init = function(){
