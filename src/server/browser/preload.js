@@ -47,13 +47,17 @@ module.exports = function ElectronPreload(){
   };
 
   window.hasUUID = function(node, giveIfNull){
-    let hasUUID = node.getAttribute('data-browsr-id');
-    if(!hasUUID && giveIfNull){
-      let uuid = uuidv4();
-      node.setAttribute('data-browsr-id', uuid);
-      return uuid;
+    try {
+      let hasUUID = node.getAttribute('data-browsr-id');
+      if(!hasUUID && giveIfNull){
+        let uuid = uuidv4();
+        node.setAttribute('data-browsr-id', uuid);
+        return uuid;
+      }
+      return hasUUID;
+    } catch (error){
+
     }
-    return hasUUID;
   };
 
   window.createUniqueIDS = function(){

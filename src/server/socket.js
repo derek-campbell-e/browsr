@@ -25,6 +25,9 @@ module.exports = function SocketServer(Browsr, Server){
     socket.on('dom-event-client', function(){
       Browsr.server.browser.processEvent.apply(null, arguments);
     });
+    socket.on('window-dimensions', function(dim){
+      Browsr.server.browser.setWindow(dim);
+    })
   });
 
   return ss;

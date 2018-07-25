@@ -1,7 +1,8 @@
-module.exports = function Electron(Browsr){
+module.exports = function Electron(Browsr, SocketServer){
   
   const {app, BrowserWindow, session, ipcMain} = require('electron');
   const cheerio = require('cheerio');
+  let socketSever =  SocketServer;
   
   // Keep a global reference of the window object, if you don't, the window will
   // be closed automatically when the JavaScript object is garbage collected.
@@ -34,6 +35,32 @@ module.exports = function Electron(Browsr){
       // when you should delete the corresponding element.
       win = null
     })
+    win.webContents.on('dom-ready', function(){
+      app.runJS(function(){
+        createUniqueIDS();
+        createObserver();
+      })
+    });
+    win.webContents.on('did-finish-load', function(){
+      app.prePagePipe().then(function(html){
+        socketSever.broadcast('page', html);
+      }).catch(console.log);
+    });
+    win.webContents.session.webRequest.onBeforeRequest([], function(details, callback){
+      const request = require('request');
+      //console.log(details.resourceType, details.url);
+      switch(details.resourceType){
+        case 'image':
+          request.get(details.url, {}, function(error, response, body){
+            if (!error && response.statusCode == 200) {
+              let data = "data:" + response.headers["content-type"] + ";base64," + new Buffer(body).toString('base64');
+              socketSever.broadcast('image', {url: details.url, content: data});
+            }
+          });
+        break;
+      }
+      callback({cancel: false});
+    });
   }
   
   // This method will be called when Electron has finished
@@ -58,7 +85,12 @@ module.exports = function Electron(Browsr){
     }
   });
 
+  app.setWindow = function(dimensions){
+    win.setSize(dimensions.width, dimensions.height);
+  };
+
   app.processEvent = function(event, uuid){
+    console.log(arguments);
     app.runJS(function(event, uuid){
       console.log(arguments);
       let eventClass = null;
@@ -111,36 +143,14 @@ module.exports = function Electron(Browsr){
     });
   };
 
+  ipcMain.on('dom-event', function(event, domchange){
+    socketSever.broadcast('dom-change', domchange);
+  });
+
+
   app.loadPage = function(url){
-    //const socket = Browsr.server.socket.socket;
-    const socketSever =  Browsr.server.socket;
-    ipcMain.on('dom-event', function(event, domchange){
-      //console.log(domchange);
-      socketSever.broadcast('dom-change', domchange);
-    });
-
-    /*
-    socket.on('click', function(uuid){
-      app.runJS(function(uuid){
-        document.querySelector(`[data-browsr-id='${uuid}']`).click();
-      }, uuid).then(function(){
-        socket.emit('update', new Date());
-      });
-    });
-    */
-
     win.loadURL(url);
-    win.webContents.on('dom-ready', function(){
-      app.runJS(function(){
-        createUniqueIDS();
-        createObserver();
-      })
-    });
-    win.webContents.on('did-finish-load', function(){
-      app.prePagePipe().then(function(html){
-        socketSever.broadcast('page', html);
-      }).catch(console.log);
-    });
+   
   };
 
   app.prePagePipe = function(){
