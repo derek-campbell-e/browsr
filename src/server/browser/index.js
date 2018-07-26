@@ -47,18 +47,6 @@ module.exports = function Electron(Browsr, SocketServer){
       }).catch(console.log);
     });
     win.webContents.session.webRequest.onBeforeRequest([], function(details, callback){
-      const request = require('request');
-      //console.log(details.resourceType, details.url);
-      switch(details.resourceType){
-        case 'image':
-          request.get(details.url, {}, function(error, response, body){
-            if (!error && response.statusCode == 200) {
-              let data = "data:" + response.headers["content-type"] + ";base64," + new Buffer(body).toString('base64');
-              socketSever.broadcast('image', {url: details.url, content: data});
-            }
-          });
-        break;
-      }
       callback({cancel: false});
     });
   }
@@ -178,6 +166,13 @@ module.exports = function Electron(Browsr, SocketServer){
           let isAbsolute = new RegExp('^(?:[a-z]+:)?//', 'i');
           if(isAbsolute.test(node.href)){
             node.href = new URL(node.href, currentURL);
+          }
+          if(node.getAttribute('rel') === 'stylesheet'){
+            base64r(node.href, true, function(base64){
+              if(base64){
+                node.href = base64;
+              }
+            });
           }
         });
       });

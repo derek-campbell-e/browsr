@@ -1,6 +1,7 @@
 module.exports = function ElectronPreload(){
   const {ipcRenderer} = require('electron');
 
+  window.base64r = require('./base64r');
 
   window.testIPC = function(){
     //ipcRenderer.send('dom-event', 'change');
