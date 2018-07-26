@@ -1,7 +1,22 @@
+var _setImmediate = setImmediate;
+process.once('loaded', function() {
+  global.setImmediate = _setImmediate;
+});
+
 module.exports = function ElectronPreload(){
   const {ipcRenderer} = require('electron');
 
+
   window.base64r = require('./base64r');
+
+  window.contentSecurityPolicy = function(){
+    try {
+      let head = document.getElementsByTagName('head')[0];
+      head.insertAdjacentHTML('afterbegin', `<meta http-equiv="Content-Security-Policy" content="default-src * data: blob: * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * data: blob: 'unsafe-inline';" />`);
+    } catch (error){
+      console.log(error);
+    }
+  };
 
   window.testIPC = function(){
     //ipcRenderer.send('dom-event', 'change');
@@ -26,6 +41,9 @@ module.exports = function ElectronPreload(){
         });
         mut.target = mutation.target.getAttribute('data-browsr-id');
         mut.currentValue = mutation.target.getAttribute(mutation.attributeName);
+        if(mut.attributeName === 'src'){
+          mut.currentValue = (new URL(mut.currentValue, window.location.href)).href;
+        }
         window.testIPC(mut);
       });
     });

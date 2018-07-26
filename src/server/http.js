@@ -4,8 +4,14 @@ module.exports = function HTTP(Browsr){
   const server = require('http').Server(app);
   const fs = require('fs');
   const path = require('path');
+  const request = require('request');
 
   app.use(express.static(path.join(process.cwd(), 'www')));
+
+  app.get('/p', function(req, res){
+    let url = req.query.url;
+    request.get(url).pipe(res);
+  });
 
   app.get('/load', function(req, res){
     let url = req.query.url;

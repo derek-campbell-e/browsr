@@ -35,8 +35,10 @@ module.exports = function Electron(Browsr, SocketServer){
       // when you should delete the corresponding element.
       win = null
     })
+    
     win.webContents.on('dom-ready', function(){
       app.runJS(function(){
+        contentSecurityPolicy();
         createUniqueIDS();
         createObserver();
       })
@@ -80,21 +82,10 @@ module.exports = function Electron(Browsr, SocketServer){
   app.processEvent = function(event, uuid){
     console.log(arguments);
     app.runJS(function(event, uuid){
-      console.log(arguments);
+      
       let eventClass = null;
-      var doc;
-      let node = document.querySelector(`[data-browsr-id='${uuid}']`);
-      if(!node){
-        return;
-      }
-      if (node.ownerDocument) {
-          doc = node.ownerDocument;
-      } else if (node.nodeType == 9){
-          // the node may be the document itself, nodeType 9 = DOCUMENT_NODE
-          doc = node;
-      } else {
-          throw new Error("Invalid node passed to fireEvent: " + node.id);
-      }
+     
+
       switch (event.type) {
         case "click": 
         case 'mouseover':
@@ -116,9 +107,33 @@ module.exports = function Electron(Browsr, SocketServer){
         case "select":
           eventClass = "HTMLEvents";
           break;
+        case 'scroll':
+          window.scroll(event.pos.x, event.pos.y + 1);
+          return;
+        break;
+
         default:
+          console.log(arguments);
           return;
           break;
+      }
+
+      var doc;
+      let node = document.querySelector(`[data-browsr-id='${uuid}']`);
+
+      if(!node && uuid !== 'window'){
+        return;
+      }
+
+  
+
+      if (node.ownerDocument) {
+          doc = node.ownerDocument;
+      } else if (node.nodeType == 9){
+          // the node may be the document itself, nodeType 9 = DOCUMENT_NODE
+          doc = node;
+      } else {
+          throw new Error("Invalid node passed to fireEvent: " + node.id);
       }
 
       let triggeredEvent = doc.createEvent(eventClass);
@@ -167,38 +182,38 @@ module.exports = function Electron(Browsr, SocketServer){
           if(isAbsolute.test(node.href)){
             node.href = new URL(node.href, currentURL);
           }
-          if(node.getAttribute('rel') === 'stylesheet'){
-            base64r(node.href, true, function(base64){
-              if(base64){
-                node.href = base64;
-              }
-            });
-          }
         });
       });
-
-      /*
-      await app.runJS(function(){
-        function uuidv4() {
-          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-          });
-        }
-        document.querySelectorAll('*').forEach(function(node) {
-          node.setAttribute('data-browsr-id', uuidv4());
-        });
-      });
-      */
 
       let html = await app.runJS(function(){
         return document.documentElement.innerHTML;
       });
 
       let $ = cheerio.load(html);
-      $('noscript').remove();
-      $('script').remove();
-      resolve($.html());
+      let styleSheets = [];
+      $(`link[rel="stylesheet"]`).each(function(i,e){
+        styleSheets.push($(this));
+      });
+      const base64r = require('./base64r');
+      let finalize = function(){
+        $('noscript').remove();
+        $('script').remove();
+        resolve($.html());
+      };
+      let loop = function(){
+        let link = styleSheets.shift();
+        if(typeof link === "undefined"){
+          finalize();
+          return;
+        }
+        let url = link.attr('href');
+        base64r(url, true, function(data){
+          link.attr('href', data);
+          loop();
+        });
+        //loop();
+      };
+      loop();
     });
   };
 
