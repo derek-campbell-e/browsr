@@ -27,7 +27,10 @@ module.exports = function SocketServer(Browsr, Server){
     });
     socket.on('window-dimensions', function(dim){
       Browsr.server.browser.setWindow(dim);
-    })
+    });
+    socket.on('log', function(){
+      console.log.apply(console, ['WEB LOG:',...arguments]);
+    });
   });
 
   return ss;

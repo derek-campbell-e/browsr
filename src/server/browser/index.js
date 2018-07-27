@@ -81,11 +81,11 @@ module.exports = function Electron(Browsr, SocketServer){
 
   app.processEvent = function(event, uuid){
     console.log(arguments);
+    
+
     app.runJS(function(event, uuid){
       
       let eventClass = null;
-     
-
       switch (event.type) {
         case "click": 
         case 'mouseover':
@@ -109,6 +109,16 @@ module.exports = function Electron(Browsr, SocketServer){
           break;
         case 'scroll':
           window.scroll(event.pos.x, event.pos.y + 1);
+          return;
+        break;
+
+        case 'keyup':
+        case 'keypress':
+          
+          let keyboardEvent = document.createEvent('KeyboardEvent');
+          let initMethod = typeof keyboardEvent.initKeyboardEvent !== 'undefined' ? "initKeyboardEvent" : "initKeyEvent";
+          keyboardEvent[initMethod]("keypress", true, true, window, event.ctrlKey, event.metaKey, event.shiftKey, event.metaKey, 0, event.charCode);
+          document.dispatchEvent(keyboardEvent);
           return;
         break;
 
@@ -143,11 +153,17 @@ module.exports = function Electron(Browsr, SocketServer){
      
     }, event, uuid).then(function(){
       //socket.emit('update', new Date());
+    }).catch(function(error){
+      console.log(error);
     });
   };
 
   ipcMain.on('dom-event', function(event, domchange){
     socketSever.broadcast('dom-change', domchange);
+  });
+
+  ipcMain.on('log', function(event, ...args){
+    console.log.apply(console, ['RENDERER:', ...args]);
   });
 
 

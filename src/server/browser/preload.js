@@ -9,7 +9,12 @@ module.exports = function ElectronPreload(){
 
   window.base64r = require('./base64r');
 
+  window.log = function(){
+    ipcRenderer.send.apply(ipcRenderer, ['log', ...arguments]);
+  };
+
   window.contentSecurityPolicy = function(){
+    log("CONTENT SECURITY");
     try {
       let head = document.getElementsByTagName('head')[0];
       head.insertAdjacentHTML('afterbegin', `<meta http-equiv="Content-Security-Policy" content="default-src * data: blob: * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * data: blob: 'unsafe-inline';" />`);

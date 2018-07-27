@@ -37,8 +37,9 @@ module.exports = function BrowsrWeb(){
       console.log("SCROLLIN");
     });
 
-    $(document).on(`blur focus load resize scroll unload click 
+    $(document).on(`keypress blur focus load resize scroll unload click 
     dblclick  change select submit  error`, '*', function(e){
+      //socket.emit.apply(socket, ['log', e]);
       let dom = $(this);
       let id = dom.attr('data-browsr-id');
       let type = e.type;
@@ -47,25 +48,33 @@ module.exports = function BrowsrWeb(){
       exports.target = id;
       //exports.extra = e;
       console.log(exports);
-      socket.emit('dom-event-client', exports, id);
+      let cancel = true;
       switch(type){
         case 'blur':
         case 'focus':
         case 'focusin':
         case 'focusout':
+        break;
         case 'keydown':
         case 'keypress':
         case 'keyup':
-          return true;
+          cancel = false;
+          exports.key = e.key;
+          exports.keyCode = e.keyCode;
+          exports.shiftKey = e.shiftKey;
+          exports.metaKey = e.metaKey;
+          exports.ctrlKey = e.ctrlKey;
+          exports.charCode = e.charCode;
         break;
         case 'click':
           if($(e.target).is(":input")){
             console.log("NOT CANCELLING");
-            return true;
+            cancel = false;
           }
         break;
       }
-      return false;
+      socket.emit('dom-event-client', exports, id);
+      return !cancel;
     });
     socket.on('connect', function(){
       console.log('CONNECTED');
