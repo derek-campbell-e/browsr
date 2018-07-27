@@ -1,6 +1,7 @@
 module.exports = function Electron(Browsr, SocketServer){
   
   const {app, BrowserWindow, session, ipcMain} = require('electron');
+  app.actions = require('./actions')(app);
   const cheerio = require('cheerio');
   let socketSever =  SocketServer;
   
@@ -14,8 +15,9 @@ module.exports = function Electron(Browsr, SocketServer){
       width: 800, 
       height: 600, 
       show: true, 
-      x:2900, 
-      y:0, 
+      //x:2900, 
+      //y:0,
+      x: 1285, y: 33, width: 1265, height: 1355,
       webPreferences:{
         nodeIntegration: false,
         preload: require('path').join(__dirname, './preload.js')
@@ -79,83 +81,34 @@ module.exports = function Electron(Browsr, SocketServer){
     win.setSize(dimensions.width, dimensions.height);
   };
 
-  app.processEvent = function(event, uuid){
-    console.log(arguments);
-    
-
-    app.runJS(function(event, uuid){
-      
-      let eventClass = null;
-      switch (event.type) {
-        case "click": 
-        case 'mouseover':
-        case 'mouseout':
-        case 'mouseenter':
-        case 'mouseleave':
-        case "mousedown":
-        case "mouseup":
-          eventClass = "MouseEvents";
-          break;
-        case "focus":
-        case "blur":
-        case 'focusin':
-        case 'focusout':
-          eventClass = 'FocusEvent';
-        break;
-
-        case "change":
-        case "select":
-          eventClass = "HTMLEvents";
-          break;
-        case 'scroll':
-          window.scroll(event.pos.x, event.pos.y + 1);
-          return;
-        break;
-
-        case 'keyup':
-        case 'keypress':
-          
-          let keyboardEvent = document.createEvent('KeyboardEvent');
-          let initMethod = typeof keyboardEvent.initKeyboardEvent !== 'undefined' ? "initKeyboardEvent" : "initKeyEvent";
-          keyboardEvent[initMethod]("keypress", true, true, window, event.ctrlKey, event.metaKey, event.shiftKey, event.metaKey, 0, event.charCode);
-          document.dispatchEvent(keyboardEvent);
-          return;
-        break;
-
-        default:
-          console.log(arguments);
-          return;
-          break;
-      }
-
-      var doc;
-      let node = document.querySelector(`[data-browsr-id='${uuid}']`);
-
-      if(!node && uuid !== 'window'){
-        return;
-      }
-
   
 
-      if (node.ownerDocument) {
-          doc = node.ownerDocument;
-      } else if (node.nodeType == 9){
-          // the node may be the document itself, nodeType 9 = DOCUMENT_NODE
-          doc = node;
-      } else {
-          throw new Error("Invalid node passed to fireEvent: " + node.id);
-      }
-
-      let triggeredEvent = doc.createEvent(eventClass);
-      triggeredEvent.initEvent(event.type, true, true);
-      triggeredEvent.synthetic = true;
-      node.dispatchEvent(triggeredEvent);
-     
-    }, event, uuid).then(function(){
-      //socket.emit('update', new Date());
-    }).catch(function(error){
-      console.log(error);
-    });
+  app.processEvent = function(event, uuid){
+    console.log(event, uuid);
+    let selector = app.actions.dbi(uuid);
+    switch(event.type){
+      case 'keypress':
+        app.actions.type(selector, event.key);
+      break;
+      case 'click':
+        app.actions.click(selector);
+      break;
+      case 'mousedown':
+        app.actions.mousedown(selector);
+      break;
+      case 'mouseup':
+        app.actions.mouseup(selector);
+      break;
+      case 'mouseover':
+        app.actions.mouseover(selector);
+      break;
+      case 'mouseout':
+        app.actions.mouseout(selector);
+      break;
+      case 'scroll':
+        app.actions.scroll(event.pos);
+      break;
+    }
   };
 
   ipcMain.on('dom-event', function(event, domchange){
@@ -224,6 +177,8 @@ module.exports = function Electron(Browsr, SocketServer){
         }
         let url = link.attr('href');
         base64r(url, true, function(data){
+          link.attr('integrity', null);
+          link.attr('crossorigin', null);
           link.attr('href', data);
           loop();
         });

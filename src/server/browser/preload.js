@@ -6,7 +6,7 @@ process.once('loaded', function() {
 module.exports = function ElectronPreload(){
   const {ipcRenderer} = require('electron');
 
-
+  window.remote = require('electron').remote;
   window.base64r = require('./base64r');
 
   window.log = function(){

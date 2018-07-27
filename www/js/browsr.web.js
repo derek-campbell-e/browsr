@@ -38,7 +38,7 @@ module.exports = function BrowsrWeb(){
     });
 
     $(document).on(`keypress blur focus load resize scroll unload click 
-    dblclick  change select submit  error`, '*', function(e){
+    dblclick  change select submit  error` + mouseEvents, '*', function(e){
       //socket.emit.apply(socket, ['log', e]);
       let dom = $(this);
       let id = dom.attr('data-browsr-id');
@@ -46,8 +46,7 @@ module.exports = function BrowsrWeb(){
       let exports = {};
       exports.type = type;
       exports.target = id;
-      //exports.extra = e;
-      console.log(exports);
+      //console.log(e);
       let cancel = true;
       switch(type){
         case 'blur':
@@ -59,12 +58,20 @@ module.exports = function BrowsrWeb(){
         case 'keypress':
         case 'keyup':
           cancel = false;
+          if(!id){
+            break;
+          }
+          e.stopPropagation();
+          exports.target = $(e.target).attr('data-browsr-id');
           exports.key = e.key;
+          exports.code = e.key;
           exports.keyCode = e.keyCode;
           exports.shiftKey = e.shiftKey;
           exports.metaKey = e.metaKey;
           exports.ctrlKey = e.ctrlKey;
           exports.charCode = e.charCode;
+          exports.altKey = e.altKey;
+          id = exports.target;
         break;
         case 'click':
           if($(e.target).is(":input")){
