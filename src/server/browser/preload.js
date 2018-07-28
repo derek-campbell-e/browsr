@@ -39,10 +39,23 @@ module.exports = function ElectronPreload(){
         mut.type = mutation.type;
         mut.attributeName = mutation.attributeName;
         mut.addedNodes = Array.from(mutation.addedNodes).map(function(node){
-          return hasUUID(node, true);
+          hasUUID(node, true);
+          let obj = {};
+          obj.uuid = hasUUID(node, true);
+          obj.html = node.outerHTML;
+          obj.parent = hasUUID(node.parentNode, true);
+          obj.index = ([].slice.call(node.parentNode.children)).indexOf(node);
+          log(obj);
+          return obj;
         });
         mut.removedNodes = Array.from(mutation.removedNodes).map(function(node){
-          return hasUUID(node, true);
+          hasUUID(node, true);
+          let obj = {};
+          obj.uuid = hasUUID(node, true);
+          obj.html = node.outerHTML;
+          obj.parent = hasUUID(node.parentNode, true);
+          log(obj);
+          return obj;
         });
         mut.target = mutation.target.getAttribute('data-browsr-id');
         mut.currentValue = mutation.target.getAttribute(mutation.attributeName);

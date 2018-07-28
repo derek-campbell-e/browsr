@@ -113,8 +113,21 @@ module.exports = function ElectronActions(app){
       if(!node){
         return false;
       }
-      node.focus()
-      node.value += text;
+      node.focus();
+      switch(text){
+        case 'Backspace':
+          node.value = node.value.slice(0, node.value.length - 1);
+        break;
+        case 'Enter':
+        break;
+        case 'Tab':
+          node.value += '\t';
+        break;
+        default:
+          node.value += text;
+        break;
+      } 
+      log(node.value);
     }, selector, text);
   };
 

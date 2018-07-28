@@ -11,12 +11,29 @@ module.exports = function BrowsrWeb(){
     document.documentElement.innerHTML = html;
   };
 
-  bw.domChange = function(mutation){
-    console.log(mutation);
+  bw.domChange = function(mutation){;
     let target = $(`[data-browsr-id='${mutation.target}']`);
     switch(mutation.type){
       case 'attributes':
         target.attr(mutation.attributeName, mutation.currentValue);
+      break;
+      case 'childList':
+        for(let obj of mutation.addedNodes){
+          let index = obj.index;
+          let node = document.createElement('div');
+          node.outerHTML = obj.html;
+          console.log(obj.parent);
+          let parent = document.querySelector(`[data-browsr-id='${obj.parent}']`);
+          try {
+            parent.insertBefore(node, parent.children[index]);
+          } catch (error){
+            console.log("NO PARENT,", obj);
+          }
+        }
+        for(let obj of mutation.removedNodes){
+          let parent = document.querySelector(`[data-browsr-id='${obj.parent}']`);
+          parent.children[obj.index].remove();
+        }
       break;
       default:
         console.log(mutation);
@@ -40,6 +57,7 @@ module.exports = function BrowsrWeb(){
     $(document).on(`keypress blur focus load resize scroll unload click 
     dblclick  change select submit  error` + mouseEvents, '*', function(e){
       //socket.emit.apply(socket, ['log', e]);
+      e.stopPropagation();
       let dom = $(this);
       let id = dom.attr('data-browsr-id');
       let type = e.type;
@@ -61,7 +79,7 @@ module.exports = function BrowsrWeb(){
           if(!id){
             break;
           }
-          e.stopPropagation();
+          
           exports.target = $(e.target).attr('data-browsr-id');
           exports.key = e.key;
           exports.code = e.key;

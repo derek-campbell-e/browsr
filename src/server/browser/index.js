@@ -14,10 +14,10 @@ module.exports = function Electron(Browsr, SocketServer){
     win = new BrowserWindow({
       width: 800, 
       height: 600, 
-      show: true, 
+      show: false, 
       //x:2900, 
       //y:0,
-      x: 1285, y: 33, width: 1265, height: 1355,
+      //x: 1285, y: 33, width: 1265, height: 1355,
       webPreferences:{
         nodeIntegration: false,
         preload: require('path').join(__dirname, './preload.js')
@@ -84,7 +84,7 @@ module.exports = function Electron(Browsr, SocketServer){
   
 
   app.processEvent = function(event, uuid){
-    console.log(event, uuid);
+    //console.log(event, uuid);
     let selector = app.actions.dbi(uuid);
     switch(event.type){
       case 'keypress':
